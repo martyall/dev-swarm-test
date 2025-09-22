@@ -63,3 +63,17 @@ Added health check endpoint to Express server:
   - test-005: Verifies valid ISO timestamp in health check response ✓
 
 All tests pass successfully. The health endpoint provides proper monitoring capabilities with status verification and timestamp tracking as required.
+
+## Commit: b130391 - feat: add request logging middleware
+
+Added comprehensive request logging and error handling middleware:
+- Request logging middleware logs `METHOD URL` for all incoming HTTP requests (satisfies ac-004)
+- Global error handling middleware catches and logs errors without crashing server (satisfies ac-005)
+- Error handler logs both error message and stack trace for debugging
+- Returns structured JSON error response with 500 status
+- Added test endpoint `/test-error` to facilitate error handling testing
+- Comprehensive test suites covering acceptance criteria:
+  - test-006: Verifies request method and URL logging for incoming requests ✓
+  - test-007: Verifies error handling and logging without server crashes ✓
+
+All tests pass successfully. The server now provides operational visibility through request logging and maintains stability through proper error handling.
