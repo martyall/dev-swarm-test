@@ -51,3 +51,15 @@ Implemented ExpressServer class with complete port configuration and logging:
   - test-003: Verifies startup message logs with port number ✓
 
 Added Jest configuration and verified all tests pass. The implementation fulfills all specified acceptance criteria with proper TypeScript typing and error handling.
+
+## Commit: 49b985d - feat: add health check endpoint with status and timestamp
+
+Added health check endpoint to Express server:
+- GET /health endpoint returns 200 status with JSON response (satisfies ac-003)
+- Response format: `{ status: "ok", timestamp: ISO_STRING }`
+- Timestamp is generated as valid ISO string using `new Date().toISOString()`
+- Comprehensive integration test suite covering acceptance criteria:
+  - test-004: Verifies 200 status and correct JSON format for GET /health ✓
+  - test-005: Verifies valid ISO timestamp in health check response ✓
+
+All tests pass successfully. The health endpoint provides proper monitoring capabilities with status verification and timestamp tracking as required.

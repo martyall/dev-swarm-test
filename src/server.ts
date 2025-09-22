@@ -1,4 +1,4 @@
-import express, { Application } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import { Server } from 'http';
 
 export class ExpressServer {
@@ -18,8 +18,31 @@ export class ExpressServer {
   }
 
   private setupMiddleware(): void {
+    this.app.use(this.requestLoggingMiddleware);
     this.app.use(express.json());
     this.setupRoutes();
+    this.setupErrorHandling();
+  }
+
+  private requestLoggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  };
+
+  private setupErrorHandling(): void {
+    this.app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+      console.error(`Error occurred: ${error.message}`);
+      console.error(`Stack trace: ${error.stack}`);
+      
+      if (res.headersSent) {
+        return next(error);
+      }
+      
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: 'An unexpected error occurred'
+      });
+    });
   }
 
   private setupRoutes(): void {
@@ -28,6 +51,12 @@ export class ExpressServer {
         status: 'ok',
         timestamp: new Date().toISOString()
       });
+    });
+
+    // Test endpoint to trigger errors for testing error handling
+    this.app.get('/test-error', (req, res, next) => {
+      const error = new Error('Test error for error handling');
+      next(error);
     });
   }
 
