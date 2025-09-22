@@ -10,6 +10,7 @@ export class ExpressServer {
     this.app = express();
     this.port = port || this.getPortFromEnvironment();
     this.setupMiddleware();
+    this.setupProcessErrorHandlers();
   }
 
   private getPortFromEnvironment(): number {
@@ -43,6 +44,44 @@ export class ExpressServer {
         message: 'An unexpected error occurred'
       });
     });
+  }
+
+  private setupProcessErrorHandlers(): void {
+    process.on('uncaughtException', (error: Error) => {
+      console.error('Uncaught Exception:', error.message);
+      console.error('Stack trace:', error.stack);
+      console.error('Process will exit to prevent undefined behavior');
+      process.exit(1);
+    });
+
+    process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+      console.error('Unhandled Rejection at:', promise);
+      console.error('Reason:', reason);
+      console.error('Process will exit to prevent undefined behavior');
+      process.exit(1);
+    });
+
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received, shutting down gracefully');
+      this.gracefulShutdown();
+    });
+
+    process.on('SIGINT', () => {
+      console.log('SIGINT received, shutting down gracefully');
+      this.gracefulShutdown();
+    });
+  }
+
+  private async gracefulShutdown(): Promise<void> {
+    try {
+      console.log('Starting graceful shutdown...');
+      await this.stop();
+      console.log('Server shut down successfully');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during graceful shutdown:', error);
+      process.exit(1);
+    }
   }
 
   private setupRoutes(): void {
