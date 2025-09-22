@@ -38,3 +38,16 @@ Created package.json with complete development setup:
   - Linting and formatting scripts
 
 The package configuration directly fulfills the acceptance criteria by providing both build compilation to dist/ and development server with hot reload capabilities.
+
+## Commit: ba1dce7 - feat: create Express server with configurable port
+
+Implemented ExpressServer class with complete port configuration and logging:
+- Configurable port via PORT environment variable with 3000 default (satisfies ac-001)
+- Startup logging that displays the listening port (satisfies ac-002)
+- Clean server lifecycle management with start() and stop() methods
+- Comprehensive Jest test suite covering all acceptance criteria:
+  - test-001: Verifies server starts on PORT environment variable when set ✓
+  - test-002: Verifies server defaults to port 3000 when PORT not set ✓  
+  - test-003: Verifies startup message logs with port number ✓
+
+Added Jest configuration and verified all tests pass. The implementation fulfills all specified acceptance criteria with proper TypeScript typing and error handling.
