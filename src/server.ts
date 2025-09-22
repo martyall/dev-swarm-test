@@ -19,6 +19,16 @@ export class ExpressServer {
 
   private setupMiddleware(): void {
     this.app.use(express.json());
+    this.setupRoutes();
+  }
+
+  private setupRoutes(): void {
+    this.app.get('/health', (req, res) => {
+      res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString()
+      });
+    });
   }
 
   public getApp(): Application {
