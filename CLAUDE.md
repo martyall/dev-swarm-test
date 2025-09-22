@@ -374,9 +374,27 @@ You should **NOT** spawn any processes in the terminal to assess whether you hav
 
 ### **4. A NOTE ON COMPLETION**
 When you are done with an individial task:
-- You will append your reasoning to convince your reviewer that you are done to a markdown file `PullRequest.md` (if this file doesn't exist, create it). 
+- You will append your reasoning to convince your reviewer that you are done to a markdown file `PullRequest.md` (if this file doesn't exist, create it). **You should be concise, NOT EXAUSTIVE**. 
 - This file should be sectioned by commit hash, each section should contain the reasoning and any instructions that the reviewer could run in order to convince themselves that you have met the acceptance criteria. 
 - If the commit does is not associated with the fulfillment of the acceptance criteria, simple leave it blank.
 
 After you have ingested all the context in this document, request the prompt for your assignment. In the first prompt you will receive the full text of the github issue. When you have understood the issue, **you will then STOP, ACKNOWLEDGE THAT YOU UNDERSTAND THE ISSUE** and prompt for the first task in that issue.
+
+
+### **4. A NOTE ON COMPLETION**
+
+**BEFORE MARKING ANY TASK COMPLETE**: If the task includes testCases or involves test implementation, you MUST run the tests using
+the Bash tool to verify they pass. Use `npm test`, `npm run test`, or the appropriate test command. Never commit code with tests
+that haven't been executed and verified to pass.
+
+When you are done with an individual task:
+[existing content continues...]
+
+This would be maximally effective because:
+
+1. Positioning: It's the first thing read in the completion section
+2. Emphasis: Uses bold and capitalization to draw attention
+3. Specificity: Explicitly mentions using Bash tool and test commands
+4. Blocking: Makes test execution a prerequisite for completion
+5. Scope: Clearly applies to any task with testCases
 
