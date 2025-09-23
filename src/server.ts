@@ -58,26 +58,69 @@ export class Server {
         timestamp: new Date().toISOString(),
       });
     });
-
-    // 404 handler for undefined routes
-    this.app.use('*', (req: Request, res: Response) => {
-      res.status(404).json({
-        status: 'error',
-        message: `Route ${req.originalUrl} not found`,
-        timestamp: new Date().toISOString(),
-      });
-    });
   }
 
   private setupErrorHandling(): void {
     // Global error handler
-    this.app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
-      console.error('Server Error:', error.message);
-      console.error('Stack:', error.stack);
+    this.app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+      // Skip if response already sent
+      if (res.headersSent) {
+        return next(error);
+      }
 
-      res.status(500).json({
+      // Handle different error types
+      let errorMessage: string;
+      let statusCode = 500;
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Log full error details
+        console.error('Server Error:', error.message);
+        console.error('Stack:', error.stack);
+        console.error('Request:', {
+          method: req.method,
+          url: req.url,
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+        });
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+        console.error('String Error:', error);
+      } else if (error === null || error === undefined) {
+        errorMessage = 'Unknown error occurred';
+        console.error('Null/Undefined Error:', error);
+      } else {
+        errorMessage = 'Unexpected error format';
+        console.error('Unexpected Error:', error);
+      }
+
+      // Handle custom status codes
+      if (error && typeof error === 'object' && error.statusCode) {
+        statusCode = error.statusCode;
+      } else if (error && typeof error === 'object' && error.status) {
+        statusCode = error.status;
+      }
+
+      // Ensure status code is valid HTTP error code
+      if (statusCode < 400 || statusCode >= 600) {
+        statusCode = 500;
+      }
+
+      const responsePayload = {
         status: 'error',
-        message: this.config.env === 'production' ? 'Internal server error' : error.message,
+        message: this.config.env === 'production' ? 'Internal server error' : errorMessage,
+        timestamp: new Date().toISOString(),
+        ...(this.config.env !== 'production' && { path: req.path }),
+      };
+
+      res.status(statusCode).json(responsePayload);
+    });
+
+    // Handle 404 errors for undefined routes (this should be after all other routes)
+    this.app.use('*', (req: Request, res: Response) => {
+      res.status(404).json({
+        status: 'error',
+        message: `Route ${req.originalUrl} not found`,
         timestamp: new Date().toISOString(),
       });
     });
