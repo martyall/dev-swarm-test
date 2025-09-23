@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import http from 'http';
 
 // Load environment variables
 dotenv.config();
@@ -15,6 +16,8 @@ export interface ServerConfig {
 export class Server {
   private app: Express;
   private config: ServerConfig;
+  private httpServer?: http.Server;
+  private isShuttingDown: boolean = false;
 
   constructor(config?: Partial<ServerConfig>) {
     this.config = {
@@ -90,25 +93,73 @@ export class Server {
 
   public async start(): Promise<void> {
     return new Promise((resolve) => {
-      const server = this.app.listen(this.config.port, () => {
+      this.httpServer = this.app.listen(this.config.port, () => {
         console.log(`🚀 Server running on port ${this.config.port}`);
         console.log(`📊 Environment: ${this.config.env}`);
         console.log(`🏥 Health check: http://localhost:${this.config.port}/health`);
         resolve();
       });
 
-      // Graceful shutdown
-      const gracefulShutdown = (signal: string) => {
-        console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
-        server.close(() => {
-          console.log('✅ Server closed');
-          process.exit(0);
-        });
-      };
-
-      process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-      process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+      this.setupGracefulShutdown();
     });
+  }
+
+  private setupGracefulShutdown(): void {
+    const gracefulShutdown = (signal: string) => {
+      if (this.isShuttingDown) {
+        console.log(`🛑 Already shutting down, ignoring ${signal}`);
+        return;
+      }
+
+      this.isShuttingDown = true;
+      console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+
+      if (this.httpServer) {
+        this.httpServer.close((error) => {
+          if (error) {
+            console.error('❌ Error during server shutdown:', error);
+            process.exit(1);
+          } else {
+            console.log('✅ Server closed');
+            process.exit(0);
+          }
+        });
+
+        // Force shutdown after timeout
+        setTimeout(() => {
+          console.log('⚠️ Forcing shutdown due to timeout');
+          process.exit(1);
+        }, 10000);
+      } else {
+        console.log('✅ No server to close');
+        process.exit(0);
+      }
+    };
+
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  }
+
+  public async stop(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.httpServer) {
+        resolve();
+        return;
+      }
+
+      this.isShuttingDown = true;
+      this.httpServer.close((error) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  public getServer(): http.Server | undefined {
+    return this.httpServer;
   }
 }
 
