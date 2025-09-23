@@ -65,7 +65,12 @@ describe('Server E2E Tests', () => {
       expect(response.status).toBe(200);
       expect(data).toEqual({
         status: 'ok',
-        timestamp: expect.any(String)
+        timestamp: expect.any(String),
+        uptime: expect.any(Number),
+        environment: expect.any(String),
+        version: expect.any(String),
+        memory: expect.any(Object),
+        pid: expect.any(Number)
       });
 
       // Verify timestamp is a valid ISO string

@@ -19,6 +19,9 @@ describe('Server Integration Tests', () => {
 
       expect(response.body).toHaveProperty('status', 'ok');
       expect(response.body).toHaveProperty('timestamp');
+      expect(response.body).toHaveProperty('uptime');
+      expect(response.body).toHaveProperty('environment');
+      expect(response.body).toHaveProperty('version');
       expect(response.body.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     });
 

@@ -18,8 +18,10 @@ export class Server {
   private config: ServerConfig;
   private httpServer?: http.Server;
   private isShuttingDown: boolean = false;
+  private startTime: Date;
 
   constructor(config?: Partial<ServerConfig>) {
+    this.startTime = new Date();
     this.config = {
       port: config?.port || parseInt(process.env.PORT || '3000', 10),
       env: config?.env || process.env.NODE_ENV || 'development',
@@ -53,11 +55,33 @@ export class Server {
   private setupRoutes(): void {
     // Health check endpoint
     this.app.get('/health', (req: Request, res: Response) => {
-      res.status(200).json({
+      const now = new Date();
+      const uptime = Math.floor((now.getTime() - this.startTime.getTime()) / 1000);
+
+      const healthData = {
         status: 'ok',
-        timestamp: new Date().toISOString(),
-      });
+        timestamp: now.toISOString(),
+        uptime: uptime,
+        environment: this.config.env,
+        version: process.version,
+        ...(this.config.env !== 'production' && {
+          memory: this.getMemoryUsage(),
+          pid: process.pid,
+        }),
+      };
+
+      res.status(200).json(healthData);
     });
+  }
+
+  private getMemoryUsage() {
+    const usage = process.memoryUsage();
+    return {
+      rss: Math.round(usage.rss / 1024 / 1024 * 100) / 100, // MB
+      heapTotal: Math.round(usage.heapTotal / 1024 / 1024 * 100) / 100, // MB
+      heapUsed: Math.round(usage.heapUsed / 1024 / 1024 * 100) / 100, // MB
+      external: Math.round(usage.external / 1024 / 1024 * 100) / 100, // MB
+    };
   }
 
   private setupErrorHandling(): void {
