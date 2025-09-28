@@ -6,7 +6,7 @@ describe('hello function', () => {
     expect(result).toBe('Hello, World!');
   });
 
-  it('should export hello function that can be imported', () => {
+  it('should export hello function successfully', () => {
     expect(typeof hello).toBe('function');
   });
 });
