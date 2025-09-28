@@ -26,6 +26,32 @@ describe('app.js', () => {
       expect(appModule.greet).toBe(greet);
     });
 
+    it('should export greet function successfully', () => {
+      // Test that greet function is available for export when imported by other modules
+      const appModule = require('../src/app');
+
+      // Verify greet function is exported
+      expect(appModule.greet).toBeDefined();
+      expect(typeof appModule.greet).toBe('function');
+
+      // Verify it's the same function as the imported one
+      expect(appModule.greet).toBe(greet);
+    });
+
+    it('should return correct personalized greeting message', () => {
+      // Test that greet function returns the correct format with name parameter
+      const result = greet('Alice');
+      expect(result).toBe('Hello, World! Nice to meet you, Alice!');
+
+      // Test with different name
+      const result2 = greet('Bob');
+      expect(result2).toBe('Hello, World! Nice to meet you, Bob!');
+
+      // Test with another name to verify pattern
+      const result3 = greet('Charlie');
+      expect(result3).toBe('Hello, World! Nice to meet you, Charlie!');
+    });
+
     it('should return correct greeting format with custom name', () => {
       // Mock the hello function to return expected value
       jest.doMock('../src/hello', () => ({
