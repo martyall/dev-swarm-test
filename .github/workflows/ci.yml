@@ -9,17 +9,29 @@ on:
 env:
   NODE_VERSION: '18'
   CACHE_PREFIX: 'node-modules'
+  FORCE_COLOR: '1'
+  CI: 'true'
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     strategy:
       matrix:
-        node-version: [16, 18, 20]
-      fail-fast: false
+        # For PRs, only test latest LTS and current. For pushes to main, test all supported versions
+        node-version: ${{ github.event_name == 'pull_request' && fromJSON('["18", "20"]') || fromJSON('["16", "18", "20"]') }}
+        include:
+          # Mark Node 16 as experimental since it's EOL
+          - node-version: 16
+            experimental: true
+            continue-on-error: true
+        exclude:
+          # Exclude Node 16 for PR events to speed up CI
+          - node-version: ${{ github.event_name == 'pull_request' && '16' || '' }}
+      fail-fast: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      max-parallel: ${{ github.event_name == 'pull_request' && 2 || 3 }}
 
     steps:
       - name: Checkout code
@@ -30,29 +42,48 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+          check-latest: true
+
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: bash
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
 
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.npm
+            ${{ steps.npm-cache-dir.outputs.dir }}
             node_modules
-          key: ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+            ~/.cache/ms-playwright
+          key: ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ matrix.node-version }}-
-            ${{ env.CACHE_PREFIX }}-${{ runner.os }}-
+            ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+        run: |
+          # Check if we have package-lock.json, yarn.lock, or pnpm-lock.yaml
+          if [ -f "pnpm-lock.yaml" ]; then
+            corepack enable pnpm
+            pnpm install --frozen-lockfile --prefer-offline
+          elif [ -f "yarn.lock" ]; then
+            corepack enable yarn
+            yarn install --immutable --prefer-offline
+          else
+            npm ci --prefer-offline --no-audit
+          fi
 
       - name: Run tests
         run: |
           if [ -f "package.json" ] && grep -q '"test"' package.json; then
-            npm test -- --coverage --watchAll=false --ci
+            npm test -- --coverage --watchAll=false --ci --maxWorkers=2
           else
             echo "No test script found in package.json, skipping tests"
             exit 0
           fi
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Upload test coverage
         uses: codecov/codecov-action@v4
@@ -77,27 +108,44 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          check-latest: true
+
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: bash
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
 
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.npm
+            ${{ steps.npm-cache-dir.outputs.dir }}
             node_modules
-          key: ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+            ~/.eslintcache
+          key: ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ env.NODE_VERSION }}-
-            ${{ env.CACHE_PREFIX }}-${{ runner.os }}-
+            ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+        run: |
+          # Check if we have package-lock.json, yarn.lock, or pnpm-lock.yaml
+          if [ -f "pnpm-lock.yaml" ]; then
+            corepack enable pnpm
+            pnpm install --frozen-lockfile --prefer-offline
+          elif [ -f "yarn.lock" ]; then
+            corepack enable yarn
+            yarn install --immutable --prefer-offline
+          else
+            npm ci --prefer-offline --no-audit
+          fi
 
       - name: Run ESLint
         run: |
           if [ -f "package.json" ] && grep -q '"lint"' package.json; then
             npm run lint
           elif [ -f ".eslintrc.js" ] || [ -f ".eslintrc.json" ] || [ -f "eslint.config.js" ]; then
-            npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0
+            npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0 --cache --cache-location ~/.eslintcache
           else
             echo "No ESLint configuration found, skipping lint check"
           fi
