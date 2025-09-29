@@ -1,22 +1,32 @@
-export function greet(name: string): string {
-  return `Hello, ${name}!`;
+import { Application } from './app/Application';
+import { Logger } from './utils/Logger';
+
+const logger = new Logger('Main');
+
+async function main(): Promise<void> {
+  try {
+    logger.info('Starting application...');
+
+    const app = new Application();
+    await app.start();
+
+    logger.info('Application started successfully');
+  } catch (error) {
+    logger.error('Failed to start application:', error);
+    process.exit(1);
+  }
 }
 
-export class Application {
-  private readonly name: string;
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
 
-  constructor(name: string) {
-    this.name = name;
-  }
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
 
-  public start(): void {
-    console.log(`Starting ${this.name}...`);
-  }
-
-  public getName(): string {
-    return this.name;
-  }
+if (require.main === module) {
+  main();
 }
-
-const app = new Application('TypeScript Node.js App');
-console.log(greet('TypeScript'));
