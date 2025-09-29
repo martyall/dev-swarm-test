@@ -33,6 +33,52 @@ describe('Health Check E2E Tests', () => {
   });
 
   describe('GET /health', () => {
+    // Required Test 417/test-003
+    it('should make HTTP request to health endpoint and verify response', async () => {
+      // Given an e2e test executes, when testing health check endpoint,
+      // then HTTP behavior is verified with actual requests
+      const response = await request(server.getApp())
+        .get('/health')
+        .expect(200);
+
+      // Verify HTTP response structure and content
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toMatch(/json/);
+      expect(response.body).toBeDefined();
+      expect(response.body.status).toBe('healthy');
+
+      // Verify complete response structure for HTTP behavior validation
+      expect(response.body).toMatchObject({
+        status: 'healthy',
+        timestamp: expect.any(String),
+        uptime: expect.any(Number),
+        version: expect.any(String),
+        environment: expect.any(String),
+        metrics: expect.objectContaining({
+          memory: expect.objectContaining({
+            used: expect.any(Number),
+            total: expect.any(Number),
+            usage: expect.any(Number)
+          }),
+          cpu: expect.objectContaining({
+            loadAverage: expect.any(Array),
+            cores: expect.any(Number)
+          }),
+          system: expect.objectContaining({
+            platform: expect.any(String),
+            nodeVersion: expect.any(String),
+            hostname: expect.any(String)
+          })
+        })
+      });
+
+      // Verify timestamp is valid and recent
+      const timestamp = new Date(response.body.timestamp);
+      const now = new Date();
+      expect(timestamp.getTime()).toBeLessThanOrEqual(now.getTime());
+      expect(now.getTime() - timestamp.getTime()).toBeLessThan(5000); // Within 5 seconds
+    });
+
     it('should return 200 status and healthy response', async () => {
       const response = await request(server.getApp())
         .get('/health')
