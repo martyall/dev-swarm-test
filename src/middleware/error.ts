@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Logger } from '../utils/Logger';
+import { Logger } from './utils/logger';
 import { config } from '../config';
 import { ApiError, ApiResponseBody } from '../types/api';
 

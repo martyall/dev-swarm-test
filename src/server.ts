@@ -1,7 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import { Server } from 'http';
 import { config } from './config';
-import { Logger } from './utils/Logger';
+import { Logger } from './utils/logger';
 import { AppServer, ServerHooks } from './types/express';
 import { errorHandler, notFoundHandler, setupGlobalErrorHandlers, asyncHandler } from './middleware/error';
 import healthCheck, { detailedHealthCheck, readinessCheck, livenessCheck } from './routes/health';

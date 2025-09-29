@@ -1,5 +1,5 @@
 import { Application } from './app/Application';
-import { Logger } from './utils/Logger';
+import { Logger } from './utils/logger';
 
 const logger = new Logger('Main');
 

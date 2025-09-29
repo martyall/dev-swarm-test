@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { config } from '../config';
-import { Logger } from '../utils/Logger';
+import { Logger } from './utils/logger';
 import { HealthCheckResponse, ApiResponseBody } from '../types/api';
 import { asyncHandler } from '../middleware/error';
 
