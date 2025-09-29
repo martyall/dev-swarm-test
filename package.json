@@ -15,7 +15,8 @@
     "lint": "echo 'Lint configuration pending - will be added in next phase'",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "prepare": "husky install"
   },
   "keywords": [
     "nodejs",
@@ -36,7 +37,8 @@
     "ts-jest": "^29.1.1",
     "nodemon": "^3.0.2",
     "ts-node": "^10.9.1",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "husky": "^8.0.3"
   },
   "jest": {
     "preset": "ts-jest",
