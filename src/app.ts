@@ -39,23 +39,31 @@ export class App {
   }
 
   private initializeErrorHandling(): void {
-    // Handle 404 errors
+    // Handle 404 errors - must be after all routes
     this.app.use('*', (req: Request, res: Response) => {
       res.status(404).json({
         error: 'Not Found',
-        message: `Route ${req.originalUrl} not found`,
-        timestamp: new Date().toISOString()
+        message: `Route ${req.method} ${req.originalUrl} not found`,
+        timestamp: new Date().toISOString(),
+        path: req.originalUrl,
+        method: req.method
       });
     });
 
-    // Global error handler
+    // Global error handler - must be last middleware
     this.app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
       console.error('Unhandled error:', error);
 
+      // Don't send error details in production
+      const isDevelopment = process.env.NODE_ENV === 'development';
+
       res.status(500).json({
         error: 'Internal Server Error',
-        message: 'An unexpected error occurred',
-        timestamp: new Date().toISOString()
+        message: isDevelopment ? error.message : 'An unexpected error occurred',
+        timestamp: new Date().toISOString(),
+        path: req.originalUrl,
+        method: req.method,
+        ...(isDevelopment && { stack: error.stack })
       });
     });
   }
