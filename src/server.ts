@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import { Server } from 'http';
 import { logger } from './utils/logger';
+import { httpLoggingMiddleware } from './middleware/logging';
 
 export class AppServer {
   private app: Application;
@@ -15,6 +16,7 @@ export class AppServer {
   }
 
   private setupMiddleware(): void {
+    this.app.use(httpLoggingMiddleware);
     this.app.use(express.json());
   }
 
