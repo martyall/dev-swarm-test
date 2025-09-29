@@ -1,0 +1,40 @@
+{
+  "name": "typescript-express-project",
+  "version": "1.0.0",
+  "description": "TypeScript Express project with ESLint and Prettier",
+  "main": "dist/index.js",
+  "scripts": {
+    "lint": "eslint src/**/*.{js,ts} --max-warnings=0",
+    "lint:fix": "eslint src/**/*.{js,ts} --fix",
+    "format": "prettier --write src/**/*.{js,ts,json,md}",
+    "format:check": "prettier --check src/**/*.{js,ts,json,md}"
+  },
+  "keywords": [
+    "typescript",
+    "express",
+    "eslint",
+    "prettier"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.45.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.3",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}
