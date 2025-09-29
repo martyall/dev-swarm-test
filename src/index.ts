@@ -1,16 +1,9 @@
-import express from 'express';
+import { AppServer } from './server';
 import { logger } from './utils/logger';
 
-const app = express();
-const port = process.env.PORT || 3000;
+const server = new AppServer();
 
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  logger.info('Root endpoint accessed');
-  res.json({ message: 'Hello, TypeScript Express!' });
-});
-
-app.listen(port, () => {
-  logger.info(`Server running on port ${port}`);
+server.start().catch((error) => {
+  logger.error('Failed to start server:', error);
+  process.exit(1);
 });
