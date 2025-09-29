@@ -153,10 +153,12 @@ describe('Express Server Shutdown', () => {
     await server.start();
 
     // Mock the server.close method to simulate an error
-    const originalClose = server['server'].close;
-    server['server'].close = jest.fn((callback: (error?: Error) => void) => {
-      callback(new Error('Shutdown error'));
-    });
+    const originalClose = server['server']?.close;
+    if (server['server']) {
+      server['server'].close = jest.fn((callback: (error?: Error) => void) => {
+        callback(new Error('Shutdown error'));
+      }) as any;
+    }
 
     // Shutdown should reject with the error
     await expect(server.stop()).rejects.toThrow('Shutdown error');
@@ -170,7 +172,9 @@ describe('Express Server Shutdown', () => {
     );
 
     // Restore original method for cleanup
-    server['server'].close = originalClose;
+    if (server['server'] && originalClose) {
+      server['server'].close = originalClose;
+    }
   });
 
   test('should handle repeated shutdown calls', async () => {

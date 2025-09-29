@@ -10,8 +10,9 @@ export default {
     }]
   },
   testEnvironment: 'node',
-  roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: ['**/*.test.ts'],
+  roots: ['<rootDir>/src', '<rootDir>/tests', '<rootDir>/test'],
+  testMatch: ['**/*.test.ts', '**/*.e2e.test.ts'],
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
