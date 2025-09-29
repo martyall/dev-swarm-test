@@ -13,6 +13,8 @@
     "postbuild": "echo 'Build completed successfully'",
     "type-check": "tsc --noEmit",
     "lint": "echo 'Lint configuration pending - will be added in next phase'",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\" \"tests/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\" \"tests/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -38,7 +40,8 @@
     "nodemon": "^3.0.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2",
-    "husky": "^8.0.3"
+    "husky": "^8.0.3",
+    "prettier": "^3.1.0"
   },
   "jest": {
     "preset": "ts-jest",
