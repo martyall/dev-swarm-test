@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import Logger from '../utils/logger.js';
 
 export interface RequestWithId extends Request {
@@ -12,7 +12,7 @@ export const requestIdMiddleware = (
   _res: Response,
   next: NextFunction
 ): void => {
-  req.id = uuidv4();
+  req.id = randomUUID();
   Logger.setCorrelationId(req.id);
   next();
 };

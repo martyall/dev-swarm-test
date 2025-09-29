@@ -13,9 +13,10 @@ import Logger from '../../src/utils/logger.js';
 jest.mock('../../src/utils/logger.js');
 const mockLogger = Logger as jest.Mocked<typeof Logger>;
 
-// Mock uuid
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'test-uuid-12345')
+// Mock crypto.randomUUID
+jest.mock('crypto', () => ({
+  ...jest.requireActual('crypto'),
+  randomUUID: jest.fn(() => 'test-uuid-12345')
 }));
 
 describe('Logging Middleware', () => {
