@@ -13,6 +13,31 @@ describe('Health Check E2E', () => {
   });
 
   describe('GET /health', () => {
+    it('should return 200 status for health check endpoint', async () => {
+      const response = await server.request
+        .get('/health')
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should return correct health check response body', async () => {
+      const response = await server.request
+        .get('/health')
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        status: 'ok',
+        timestamp: expect.any(String),
+        uptime: expect.any(Number)
+      });
+
+      expect(new Date(response.body.timestamp)).toBeInstanceOf(Date);
+      expect(response.body.uptime).toBeGreaterThanOrEqual(0);
+    });
+
     it('should return health status', async () => {
       const response = await server.request
         .get('/health')
