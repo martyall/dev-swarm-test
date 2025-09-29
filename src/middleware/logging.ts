@@ -23,16 +23,16 @@ export const createMorganStream = () => ({
     if (trimmedMessage) {
       Logger.info(trimmedMessage, {
         source: 'morgan',
-        type: 'http_request'
+        type: 'http_request',
       });
     }
-  }
+  },
 });
 
 export const morganLoggerMiddleware = morgan(
   ':method :url :status :response-time ms - :res[content-length] bytes',
   {
-    stream: createMorganStream()
+    stream: createMorganStream(),
   }
 );
 
@@ -51,7 +51,7 @@ export const customLoggerMiddleware = (
     ip,
     userAgent,
     requestId: req.id,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   res.on('finish', () => {
@@ -68,7 +68,7 @@ export const customLoggerMiddleware = (
       duration,
       contentLength,
       requestId: req.id,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
 
@@ -78,7 +78,7 @@ export const customLoggerMiddleware = (
 export const loggingMiddleware = [
   requestIdMiddleware,
   morganLoggerMiddleware,
-  customLoggerMiddleware
+  customLoggerMiddleware,
 ];
 
 export default loggingMiddleware;

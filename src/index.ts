@@ -18,27 +18,31 @@ const startServer = async (): Promise<void> => {
       } catch (error) {
         Logger.error('Error during graceful shutdown', {
           error: (error as Error).message,
-          stack: (error as Error).stack
+          stack: (error as Error).stack,
         });
         process.exit(1);
       }
     };
 
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => {
+      void shutdown('SIGTERM');
+    });
+    process.on('SIGINT', () => {
+      void shutdown('SIGINT');
+    });
 
     process.on('uncaughtException', (error: Error) => {
       Logger.error('Uncaught exception', {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       process.exit(1);
     });
 
-    process.on('unhandledRejection', (reason: any) => {
+    process.on('unhandledRejection', (reason: unknown) => {
       Logger.error('Unhandled rejection', {
         reason: String(reason),
-        stack: reason?.stack
+        stack: reason instanceof Error ? reason.stack : undefined,
       });
       process.exit(1);
     });
@@ -47,23 +51,22 @@ const startServer = async (): Promise<void> => {
 
     Logger.info('Server startup completed successfully', {
       address: server.getAddress(),
-      config: server.getConfig()
+      config: server.getConfig(),
     });
-
   } catch (error) {
     Logger.error('Failed to start server', {
       error: (error as Error).message,
-      stack: (error as Error).stack
+      stack: (error as Error).stack,
     });
     process.exit(1);
   }
 };
 
 // Start the server
-startServer().catch((error) => {
+startServer().catch((error: unknown) => {
   Logger.error('Unhandled error during server startup', {
-    error: error.message,
-    stack: error.stack
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
   });
   process.exit(1);
 });

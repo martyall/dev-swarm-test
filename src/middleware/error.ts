@@ -22,7 +22,7 @@ export const errorHandler = (
     url: req.url,
     stack: err.stack,
     userAgent: req.get('User-Agent'),
-    ip: req.ip
+    ip: req.ip,
   });
 
   res.status(statusCode).json({
@@ -30,8 +30,8 @@ export const errorHandler = (
     error: {
       message,
       statusCode,
-      ...(process.env['NODE_ENV'] === 'development' && { stack: err.stack })
-    }
+      ...(process.env['NODE_ENV'] === 'development' && { stack: err.stack }),
+    },
   });
 };
 

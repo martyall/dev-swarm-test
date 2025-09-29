@@ -1,4 +1,5 @@
 import express, { Application } from 'express';
+import { Server } from 'http';
 import Logger from './utils/logger.js';
 import loggingMiddleware from './middleware/logging.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
@@ -12,15 +13,17 @@ export interface ServerConfig {
 
 export class ExpressServer {
   private app: Application;
+
   private config: ServerConfig;
-  private server: any = null;
+
+  private server: Server | null = null;
 
   constructor(config?: Partial<ServerConfig>) {
     this.config = {
       port: Number(process.env['PORT']) || 3000,
       host: process.env['HOST'] || '0.0.0.0',
       environment: process.env['NODE_ENV'] || 'development',
-      ...config
+      ...config,
     };
 
     this.app = express();
@@ -40,7 +43,7 @@ export class ExpressServer {
     Logger.info('Middleware configured', {
       environment: this.config.environment,
       jsonLimit: '10mb',
-      urlencodedLimit: '10mb'
+      urlencodedLimit: '10mb',
     });
   }
 
@@ -50,7 +53,7 @@ export class ExpressServer {
 
     Logger.info('Routes configured', {
       routes: ['/health'],
-      totalRoutes: 1
+      totalRoutes: 1,
     });
   }
 
@@ -67,31 +70,34 @@ export class ExpressServer {
   public async start(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.server = this.app.listen(this.config.port, this.config.host, () => {
-          Logger.info('Express server started successfully', {
-            port: this.config.port,
-            host: this.config.host,
-            environment: this.config.environment,
-            nodeVersion: process.version,
-            pid: process.pid
-          });
-          resolve();
-        });
+        this.server = this.app.listen(
+          this.config.port,
+          this.config.host,
+          () => {
+            Logger.info('Express server started successfully', {
+              port: this.config.port,
+              host: this.config.host,
+              environment: this.config.environment,
+              nodeVersion: process.version,
+              pid: process.pid,
+            });
+            resolve();
+          }
+        );
 
-        this.server.on('error', (error: Error) => {
+        this.server?.on('error', (error: Error) => {
           Logger.error('Server startup failed', {
             error: error.message,
             port: this.config.port,
             host: this.config.host,
-            stack: error.stack
+            stack: error.stack,
           });
           reject(error);
         });
-
       } catch (error) {
         Logger.error('Failed to start server', {
           error: (error as Error).message,
-          stack: (error as Error).stack
+          stack: (error as Error).stack,
         });
         reject(error);
       }
@@ -106,11 +112,11 @@ export class ExpressServer {
         return;
       }
 
-      this.server.close((error?: Error) => {
+      this.server?.close((error?: Error) => {
         if (error) {
           Logger.error('Error stopping server', {
             error: error.message,
-            stack: error.stack
+            stack: error.stack,
           });
           reject(error);
         } else {
@@ -131,15 +137,15 @@ export class ExpressServer {
   }
 
   public isListening(): boolean {
-    return this.server !== null && this.server.listening;
+    return this.server !== null && this.server?.listening === true;
   }
 
   public getAddress(): string | null {
-    if (!this.server || !this.server.listening) {
+    if (!this.server || !this.server?.listening) {
       return null;
     }
 
-    const address = this.server.address();
+    const address = this.server?.address();
     if (typeof address === 'string') {
       return address;
     }
@@ -151,7 +157,6 @@ export class ExpressServer {
     return null;
   }
 }
-
 
 // Factory function for easy server creation
 export const createServer = (config?: Partial<ServerConfig>): ExpressServer => {

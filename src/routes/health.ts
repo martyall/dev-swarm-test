@@ -32,10 +32,14 @@ export interface HealthCheckResponse {
 const getPackageVersion = (): string => {
   try {
     const packageJsonPath = join(process.cwd(), 'package.json');
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
+      version?: string;
+    };
     return packageJson.version || '1.0.0';
   } catch (error) {
-    Logger.warn('Failed to read package.json version', { error: (error as Error).message });
+    Logger.warn('Failed to read package.json version', {
+      error: (error as Error).message,
+    });
     return '1.0.0';
   }
 };
@@ -45,7 +49,8 @@ export const healthCheckHandler = (req: Request, res: Response): void => {
     const memoryUsage = process.memoryUsage();
     const totalMemory = os.totalmem();
     const usedMemory = memoryUsage.heapUsed;
-    const memoryUsagePercent = Math.round((usedMemory / totalMemory) * 100 * 100) / 100;
+    const memoryUsagePercent =
+      Math.round((usedMemory / totalMemory) * 100 * 100) / 100;
 
     const healthData: HealthCheckResponse = {
       status: 'healthy',
@@ -57,26 +62,26 @@ export const healthCheckHandler = (req: Request, res: Response): void => {
         memory: {
           used: usedMemory,
           total: totalMemory,
-          usage: memoryUsagePercent
+          usage: memoryUsagePercent,
         },
         cpu: {
           loadAverage: os.loadavg(),
-          cores: os.cpus().length
+          cores: os.cpus().length,
         },
         system: {
           platform: os.platform(),
           nodeVersion: process.version,
-          hostname: os.hostname()
-        }
-      }
+          hostname: os.hostname(),
+        },
+      },
     };
 
     Logger.info('Health check requested', {
-      requestId: (req as any).id,
+      requestId: (req as { id?: string }).id,
       ip: req.ip,
       userAgent: req.get('User-Agent'),
       uptime: healthData.uptime,
-      memoryUsage: memoryUsagePercent
+      memoryUsage: memoryUsagePercent,
     });
 
     res.status(200).json(healthData);
@@ -85,8 +90,8 @@ export const healthCheckHandler = (req: Request, res: Response): void => {
 
     Logger.error('Health check failed', {
       error: errorMessage,
-      requestId: (req as any).id,
-      ip: req.ip
+      requestId: (req as { id?: string }).id,
+      ip: req.ip,
     });
 
     const errorResponse: HealthCheckResponse = {
@@ -101,9 +106,9 @@ export const healthCheckHandler = (req: Request, res: Response): void => {
         system: {
           platform: 'unknown',
           nodeVersion: process.version,
-          hostname: 'unknown'
-        }
-      }
+          hostname: 'unknown',
+        },
+      },
     };
 
     res.status(503).json(errorResponse);
