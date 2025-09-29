@@ -3,6 +3,7 @@ import { Server } from 'http';
 import { config } from './config';
 import { Logger } from './utils/Logger';
 import { AppServer, ServerHooks } from './types/express';
+import { errorHandler, notFoundHandler, setupGlobalErrorHandlers } from './middleware/error';
 
 export class ExpressServer implements AppServer {
   public app: Application;
@@ -68,28 +69,11 @@ export class ExpressServer implements AppServer {
   }
 
   private setupErrorHandling(): void {
-    // 404 handler
-    this.app.use((req: Request, res: Response) => {
-      res.status(404).json({
-        success: false,
-        error: `Route ${req.method} ${req.originalUrl} not found`,
-        timestamp: new Date().toISOString()
-      });
-    });
+    // 404 handler - must come after all routes
+    this.app.use(notFoundHandler);
 
-    // Global error handler
-    this.app.use((error: Error, req: Request, res: Response, next: any) => {
-      this.logger.error('Unhandled error:', error);
-
-      const statusCode = (error as any).statusCode || 500;
-      res.status(statusCode).json({
-        success: false,
-        error: config.environment === 'production'
-          ? 'Internal server error'
-          : error.message,
-        timestamp: new Date().toISOString()
-      });
-    });
+    // Global error handler - must come last
+    this.app.use(errorHandler);
   }
 
   private setupGracefulShutdown(): void {
@@ -186,6 +170,15 @@ export class ExpressServer implements AppServer {
 // Factory function for creating server instances
 export function createServer(hooks?: ServerHooks): ExpressServer {
   return new ExpressServer(hooks);
+}
+
+// Setup global error handlers once when the module is loaded
+let globalHandlersSetup = false;
+export function ensureGlobalErrorHandlers(): void {
+  if (!globalHandlersSetup) {
+    setupGlobalErrorHandlers();
+    globalHandlersSetup = true;
+  }
 }
 
 // Export default instance
