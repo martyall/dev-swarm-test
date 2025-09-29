@@ -2,6 +2,7 @@ import express, { Application } from 'express';
 import { Server } from 'http';
 import { logger } from './utils/logger';
 import { httpLoggingMiddleware } from './middleware/logging';
+import { healthRouter } from './routes/health';
 
 export class AppServer {
   private app: Application;
@@ -21,6 +22,8 @@ export class AppServer {
   }
 
   private setupRoutes(): void {
+    this.app.use(healthRouter);
+
     this.app.get('/', (req, res) => {
       logger.info('Root endpoint accessed');
       res.json({ message: 'Hello, TypeScript Express!' });
