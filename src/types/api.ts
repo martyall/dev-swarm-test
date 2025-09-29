@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 // Base interfaces for API requests and responses
-export interface ApiRequest<TBody = any, TQuery = any, TParams = any> extends Request {
+export interface ApiRequest<TBody = any, TQuery = any, TParams = any> extends Omit<Request, 'body' | 'query' | 'params'> {
   body: TBody;
   query: TQuery;
   params: TParams;
