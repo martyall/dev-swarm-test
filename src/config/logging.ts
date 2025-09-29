@@ -23,7 +23,7 @@ const createConsoleTransport = (level: string): winston.transport => {
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json()
-      )
+      ),
     });
   }
 
@@ -32,11 +32,15 @@ const createConsoleTransport = (level: string): winston.transport => {
     format: winston.format.combine(
       winston.format.colorize(),
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      winston.format.printf(({ timestamp, level, message, ...meta }) => {
-        const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
-        return `${timestamp} [${level}]: ${message} ${metaStr}`;
-      })
-    )
+      winston.format.printf(
+        ({ timestamp, level: logLevel, message, ...meta }) => {
+          const metaStr = Object.keys(meta).length
+            ? JSON.stringify(meta, null, 2)
+            : '';
+          return `${String(timestamp)} [${String(logLevel)}]: ${String(message)} ${String(metaStr)}`;
+        }
+      )
+    ),
   });
 };
 
@@ -65,13 +69,11 @@ export const createLoggingConfig = (): LoggingConfig => {
       winston.format.errors({ stack: true }),
       winston.format.json()
     ),
-    transports: [
-      createConsoleTransport(level)
-    ],
+    transports: [createConsoleTransport(level)],
     defaultMeta: {
       service: 'express-typescript-server',
-      environment
-    }
+      environment,
+    },
   };
 };
 
