@@ -3,8 +3,9 @@ import { Server } from 'http';
 import { config } from './config';
 import { Logger } from './utils/Logger';
 import { AppServer, ServerHooks } from './types/express';
-import { errorHandler, notFoundHandler, setupGlobalErrorHandlers } from './middleware/error';
-import healthCheck from './routes/health';
+import { errorHandler, notFoundHandler, setupGlobalErrorHandlers, asyncHandler } from './middleware/error';
+import healthCheck, { detailedHealthCheck, readinessCheck, livenessCheck } from './routes/health';
+import { ApiResponseBody } from './types/api';
 
 export class ExpressServer implements AppServer {
   public app: Application;
@@ -31,31 +32,85 @@ export class ExpressServer implements AppServer {
   }
 
   private setupMiddleware(): void {
+    // Trust proxy if behind load balancer
+    this.app.set('trust proxy', true);
+
+    // Body parsing middleware
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-    // Request logging middleware
+    // Security headers middleware
     this.app.use((req: Request, res: Response, next) => {
-      this.logger.info(`${req.method} ${req.path}`);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      next();
+    });
+
+    // Request context and logging middleware
+    this.app.use((req: Request, res: Response, next) => {
+      // Add request ID for tracking
+      const requestId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+      (req as any).requestId = requestId;
+
+      // Log request
+      this.logger.info(`${req.method} ${req.path}`, {
+        requestId,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+
       next();
     });
   }
 
   private setupRoutes(): void {
-    // Health check endpoint - using dedicated route handler
+    // Health check endpoints - using dedicated route handlers
     this.app.get('/health', healthCheck);
+    this.app.get('/health/detailed', detailedHealthCheck);
+    this.app.get('/health/ready', readinessCheck);
+    this.app.get('/health/live', livenessCheck);
 
-    // Root endpoint
-    this.app.get('/', (req: Request, res: Response) => {
-      res.status(200).json({
+    // Root endpoint - using async handler for consistency
+    this.app.get('/', asyncHandler(async (req: Request, res: Response) => {
+      const response: ApiResponseBody = {
         success: true,
         message: 'Express TypeScript Server is running',
         data: {
           timestamp: new Date().toISOString(),
-          environment: config.environment
-        }
-      });
-    });
+          environment: config.environment,
+          version: process.env['npm_package_version'] || '1.0.0',
+          uptime: process.uptime()
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      res.status(200).json(response);
+    }));
+
+    // API info endpoint
+    this.app.get('/api', asyncHandler(async (req: Request, res: Response) => {
+      const response: ApiResponseBody = {
+        success: true,
+        data: {
+          name: 'Express TypeScript API',
+          version: process.env['npm_package_version'] || '1.0.0',
+          environment: config.environment,
+          endpoints: {
+            health: '/health',
+            healthDetailed: '/health/detailed',
+            healthReadiness: '/health/ready',
+            healthLiveness: '/health/live',
+            root: '/',
+            api: '/api'
+          },
+          timestamp: new Date().toISOString()
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      res.status(200).json(response);
+    }));
   }
 
   private setupErrorHandling(): void {
