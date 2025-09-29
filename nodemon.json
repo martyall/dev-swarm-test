@@ -1,0 +1,23 @@
+{
+  "watch": [
+    "src/**/*"
+  ],
+  "ext": "ts,json",
+  "ignore": [
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "tests/**/*",
+    "dist/**/*",
+    "coverage/**/*",
+    "node_modules/**/*"
+  ],
+  "exec": "ts-node src/index.ts",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000,
+  "restartable": "rs",
+  "colours": true,
+  "legacyWatch": false,
+  "verbose": true
+}

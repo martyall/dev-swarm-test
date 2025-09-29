@@ -45,6 +45,19 @@ describe('Development Workflow', () => {
 
     expect(hasHotReloadTool).toBe(true);
 
+    // Verify nodemon configuration exists (either in package.json or nodemon.json)
+    const nodemonConfigPath = path.resolve(__dirname, '../nodemon.json');
+    const hasNodemonConfig = packageJson.nodemonConfig || fs.existsSync(nodemonConfigPath);
+    expect(hasNodemonConfig).toBe(true);
+
+    // If nodemon.json exists, verify its structure
+    if (fs.existsSync(nodemonConfigPath)) {
+      const nodemonConfig = JSON.parse(fs.readFileSync(nodemonConfigPath, 'utf8'));
+      expect(nodemonConfig.watch).toBeDefined();
+      expect(nodemonConfig.ext).toBeDefined();
+      expect(nodemonConfig.ext).toContain('ts');
+    }
+
     // Create a test TypeScript file
     const srcPath = path.resolve(__dirname, '../src');
     if (!fs.existsSync(srcPath)) {
