@@ -1,4 +1,5 @@
 import { HealthCheckResponse, HealthStatus, ServiceInfo } from '../../src/types/health.types';
+import { HealthController, Logger } from '../../src/controllers/health.controller';
 
 describe('Health Controller', () => {
   describe('should include service status information in response payload', () => {
@@ -82,6 +83,120 @@ describe('Health Controller', () => {
       expect(typeof serviceInfo.name).toBe('string');
       expect(typeof serviceInfo.version).toBe('string');
       expect(typeof serviceInfo.environment).toBe('string');
+    });
+  });
+
+  describe('should log health check requests with appropriate level', () => {
+    it('should log health check requests with appropriate level', async () => {
+      // Mock logger
+      const mockLogger: Logger = {
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn()
+      };
+
+      // Mock Express request and response objects
+      const mockReq = {
+        ip: '127.0.0.1',
+        get: jest.fn().mockReturnValue('test-user-agent')
+      } as any;
+
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis()
+      } as any;
+
+      // Create controller instance with mock logger
+      const controller = new HealthController(
+        'test-service',
+        '1.0.0',
+        'test',
+        mockLogger
+      );
+
+      // Execute health check
+      await controller.getHealth(mockReq, mockRes);
+
+      // Verify logging occurred
+      expect(mockLogger.info).toHaveBeenCalledTimes(2);
+
+      // Verify first log call (request received)
+      expect(mockLogger.info).toHaveBeenNthCalledWith(1, 'Health check request received', {
+        ip: '127.0.0.1',
+        userAgent: 'test-user-agent',
+        timestamp: expect.any(String)
+      });
+
+      // Verify second log call (completion)
+      expect(mockLogger.info).toHaveBeenNthCalledWith(2, 'Health check completed successfully', {
+        service: 'test-service',
+        status: 'healthy',
+        uptime: expect.any(Number)
+      });
+
+      // Verify response status and structure
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        service: 'test-service',
+        health: expect.objectContaining({
+          status: 'healthy',
+          timestamp: expect.any(String),
+          uptime: expect.any(Number),
+          version: '1.0.0'
+        }),
+        checks: expect.any(Object)
+      }));
+    });
+
+    it('should log errors with appropriate level when health check fails', async () => {
+      // Mock logger
+      const mockLogger: Logger = {
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn()
+      };
+
+      // Mock Express request that will cause an error
+      const mockReq = {
+        ip: '127.0.0.1',
+        get: jest.fn().mockImplementation(() => {
+          throw new Error('Test error');
+        })
+      } as any;
+
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis()
+      } as any;
+
+      // Create controller instance with mock logger
+      const controller = new HealthController(
+        'test-service',
+        '1.0.0',
+        'test',
+        mockLogger
+      );
+
+      // Execute health check (should catch error)
+      await controller.getHealth(mockReq, mockRes);
+
+      // Verify error logging occurred
+      expect(mockLogger.error).toHaveBeenCalledTimes(1);
+      expect(mockLogger.error).toHaveBeenCalledWith('Health check failed', {
+        error: 'Test error',
+        stack: expect.any(String)
+      });
+
+      // Verify unhealthy response
+      expect(mockRes.status).toHaveBeenCalledWith(503);
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        service: 'test-service',
+        health: expect.objectContaining({
+          status: 'unhealthy'
+        })
+      }));
     });
   });
 });
