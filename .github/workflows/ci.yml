@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  CACHE_PREFIX: 'node-modules'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+          restore-keys: |
+            ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ matrix.node-version }}-
+            ${{ env.CACHE_PREFIX }}-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run tests
+        run: |
+          if [ -f "package.json" ] && grep -q '"test"' package.json; then
+            npm test -- --coverage --watchAll=false --ci
+          else
+            echo "No test script found in package.json, skipping tests"
+            exit 0
+          fi
+
+      - name: Upload test coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.node-version == 18
+        with:
+          file: ./coverage/lcov.info
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  hygiene:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+          restore-keys: |
+            ${{ env.CACHE_PREFIX }}-${{ runner.os }}-node-${{ env.NODE_VERSION }}-
+            ${{ env.CACHE_PREFIX }}-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run ESLint
+        run: |
+          if [ -f "package.json" ] && grep -q '"lint"' package.json; then
+            npm run lint
+          elif [ -f ".eslintrc.js" ] || [ -f ".eslintrc.json" ] || [ -f "eslint.config.js" ]; then
+            npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0
+          else
+            echo "No ESLint configuration found, skipping lint check"
+          fi
+
+      - name: Check Prettier formatting
+        run: |
+          if [ -f "package.json" ] && grep -q '"format:check"' package.json; then
+            npm run format:check
+          elif [ -f ".prettierrc" ] || [ -f ".prettierrc.json" ] || [ -f "prettier.config.js" ]; then
+            npx prettier --check "**/*.{js,jsx,ts,tsx,json,md,yml,yaml}"
+          else
+            echo "No Prettier configuration found, skipping format check"
+          fi
+
+      - name: TypeScript type check
+        run: |
+          if [ -f "tsconfig.json" ]; then
+            if [ -f "package.json" ] && grep -q '"typecheck"' package.json; then
+              npm run typecheck
+            else
+              npx tsc --noEmit
+            fi
+          else
+            echo "No TypeScript configuration found, skipping type check"
+          fi
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+
+      - name: Check for known vulnerabilities
+        run: |
+          if command -v npx >/dev/null 2>&1; then
+            npx audit-ci --moderate
+          fi
+        continue-on-error: true
