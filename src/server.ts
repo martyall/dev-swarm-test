@@ -4,6 +4,7 @@ import { config } from './config';
 import { Logger } from './utils/Logger';
 import { AppServer, ServerHooks } from './types/express';
 import { errorHandler, notFoundHandler, setupGlobalErrorHandlers } from './middleware/error';
+import healthCheck from './routes/health';
 
 export class ExpressServer implements AppServer {
   public app: Application;
@@ -41,19 +42,8 @@ export class ExpressServer implements AppServer {
   }
 
   private setupRoutes(): void {
-    // Health check endpoint
-    this.app.get('/health', (req: Request, res: Response) => {
-      res.status(200).json({
-        success: true,
-        data: {
-          status: 'healthy',
-          uptime: process.uptime(),
-          timestamp: new Date().toISOString(),
-          version: process.env['npm_package_version'] || '1.0.0',
-          environment: config.environment
-        }
-      });
-    });
+    // Health check endpoint - using dedicated route handler
+    this.app.get('/health', healthCheck);
 
     // Root endpoint
     this.app.get('/', (req: Request, res: Response) => {
